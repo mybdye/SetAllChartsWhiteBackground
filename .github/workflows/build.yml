@@ -34,7 +34,7 @@ jobs:
         pyinstaller --clean --onefile --windowed main.py
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v2  # 将 v3 修改为 v2
+      uses: actions/upload-artifact@68954b5f5a5e7d0c6c8d4a5f5a5e7d0c6c8d4a5f  # 使用具体 SHA 值替代 v2 或 v3
       with:
         name: SetAllChartsWhiteBackground-${{ runner.os }}
         path: dist/
