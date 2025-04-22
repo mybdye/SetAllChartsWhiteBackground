@@ -34,7 +34,7 @@ jobs:
         pyinstaller --clean --onefile --windowed main.py
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2  # 将 v3 修改为 v2
       with:
         name: SetAllChartsWhiteBackground-${{ runner.os }}
         path: dist/
