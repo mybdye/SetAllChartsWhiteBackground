@@ -24,13 +24,14 @@ sys.excepthook = handle_exception
 def set_background_white(sheet):
     """将工作表的图表区和绘图区背景填充为纯白色"""
     # 使用 openpyxl 提供的公共方法获取图表对象
-    for chart in sheet._charts:  # 修改：直接使用私有属性 sheet._charts 获取图表对象
-        try:
-            chart.plotArea.spPr.solidFill.srgbClr.val = "FFFFFF"
-        except AttributeError:
-            # 如果图表没有背景填充属性，跳过
-            continue
-    # 图片处理暂不支持，避免直接访问私有属性
+    if hasattr(sheet, '_charts'):  # 增加对私有属性的安全检查
+        for chart in sheet._charts:
+            try:
+                if hasattr(chart.plotArea, 'spPr') and hasattr(chart.plotArea.spPr, 'solidFill'):
+                    chart.plotArea.spPr.solidFill.srgbClr.val = "FFFFFF"
+            except AttributeError as e:
+                logging.warning(f"图表属性访问失败: {e}")  # 更细粒度的异常处理
+                continue
 
 # 定义版本号
 __version__ = "1.0.0"
