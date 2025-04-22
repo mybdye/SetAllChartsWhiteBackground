@@ -1,0 +1,84 @@
+name: Build GUI Executables
+
+on:
+  push:
+    tags: ["v*"]
+    branches: ["main"]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller tkinterdnd2 openpyxl
+        # 显式安装 tkinter 依赖（Windows 需要）
+        pip install python-tkdnd
+
+    - name: Build EXE with GUI
+      run: |
+        pyinstaller --onefile --noconsole --name ExcelChartTool ^
+          --hidden-import tkinterdnd2 ^
+          --add-data "venv/Lib/site-packages/tkdnd;tkdnd" ^
+          src/main.py
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-excel-tool
+        path: dist/*.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install XQuartz (for tkinterdnd2)
+      run: |
+        brew install --cask xquartz
+
+    - name: Install dependencies
+      run: |
+        pip install py2app tkinterdnd2 openpyxl
+        # macOS 需要额外库
+        brew install python-tk
+
+    - name: Build macOS App
+      run: |
+        py2applet --make-setup src/main.py
+        # 修改生成的 setup.py 添加 tkinterdnd2 资源
+        sed -i '' "s/APP = \['src\/main.py'\]/APP = ['src/main.py']\nAPP_DATA = {'resources': ['venv/lib/python3.11/site-packages/tkdnd']}/" setup.py
+        python setup.py py2app
+
+    - name: Create PKG
+      run: |
+        pkgbuild --root dist/ExcelChartTool.app \
+          --identifier com.example.excelchart \
+          --version $(echo ${{ github.ref_name }} | sed 's/^v//') \
+          --install-location /Applications \
+          dist/ExcelChartTool.pkg
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-excel-tool
+        path: dist/*.pkg
