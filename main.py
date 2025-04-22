@@ -4,6 +4,22 @@ from openpyxl import load_workbook
 from openpyxl.chart._chart import ChartBase  # 更新导入路径
 from pathlib import Path
 from tkinterdnd2 import TkinterDnD, DND_FILES  # 引入 tkinterdnd2 库
+import logging
+import sys
+
+# 初始化日志
+logging.basicConfig(
+    filename='app.log',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    """全局异常处理"""
+    logging.error("未捕获异常", exc_info=(exc_type, exc_value, exc_traceback))
+    messagebox.showerror("致命错误", "程序发生未预期错误，请查看日志文件")
+
+sys.excepthook = handle_exception
 
 def set_background_white(sheet):
     """将工作表的图表区和绘图区背景填充为纯白色"""
@@ -16,6 +32,9 @@ def set_background_white(sheet):
             continue
     # 图片处理暂不支持，避免直接访问私有属性
 
+# 定义版本号
+__version__ = "1.0.0"
+
 def process_file(file_path):
     """处理Excel文件，将所有工作表的图表区和绘图区背景填充为纯白色"""
     try:
@@ -27,7 +46,7 @@ def process_file(file_path):
         return output_path
     except Exception as e:
         logging.error(f"处理文件时出错: {e}")
-        raise
+        messagebox.showerror("错误", f"处理文件时出错: {str(e)}")
 
 def on_drop(event):
     """处理文件拖拽事件"""
@@ -47,17 +66,24 @@ def on_drop(event):
 
 def main():
     """主程序入口"""
-    root = TkinterDnD.Tk()  # 使用 TkinterDnD 的 Tk 类
-    root.title("Excel图表背景填充工具")
-    root.geometry("400x200")
+    try:
+        root = TkinterDnD.Tk()  # 使用 TkinterDnD 的 Tk 类
+        # 在 GUI 界面显示版本
+        version = f"v{__version__}"
+        if hasattr(sys, '_MEIPASS'):
+            version += " (Bundle)"
+        root.title(f"Excel图表背景填充工具 - {version}")
+        root.geometry("400x200")
 
-    label = tk.Label(root, text="将Excel文件拖拽到此窗口", font=("Arial", 16))
-    label.pack(pady=20)
+        label = tk.Label(root, text="将Excel文件拖拽到此窗口", font=("Arial", 16))
+        label.pack(pady=20)
 
-    root.drop_target_register(DND_FILES)  # 使用 tkinterdnd2 的 DND_FILES
-    root.dnd_bind('<<Drop>>', on_drop)
+        root.drop_target_register(DND_FILES)  # 使用 tkinterdnd2 的 DND_FILES
+        root.dnd_bind('<<Drop>>', on_drop)
 
-    root.mainloop()
+        root.mainloop()
+    except Exception as e:
+        handle_exception(type(e), e, e.__traceback__)
 
 if __name__ == "__main__":
     main()
